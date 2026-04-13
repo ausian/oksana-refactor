@@ -1,0 +1,82 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  overflow: auto;
+  background: #f0f2f5; /* Заменяем @layout-body-background */
+}
+
+@media (min-width: 992px) { /* Заменяем @screen-md-мин (значение по умолчанию Ant Design) */
+  .container {
+    background-repeat: no-repeat;
+    background-position: center 110px;
+    background-size: 100%;
+  }
+}
+
+.auth-layout {
+  background: #f0f2f5;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.auth-title {
+  top: 2px;
+  color: rgba(0, 0, 0, 0.85);
+  font-weight: 600;
+  font-size: 32px;
+  font-family: Avenir, 'Helvetica Neue', Arial, Helvetica, sans-serif;
+  text-align: center;
+}
+
+.auth-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column; /* Важен для вертикального выравнивания */
+  justify-content: flex-start; /* Выравниваем контент по верху */
+  align-items: center;
+  padding: 0 20px; /* Добавляем отступы по бокам */
+}
+
+.auth-form-container {
+  background: white;
+  padding: 50px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  width: 100%;
+  max-width: 700px;
+  margin-top: 50px; /* Отступ сверху (можно убрать, если уже есть у auth-header-content) */
+}
+
+.auth-input {
+  height: 44px;
+}
+
+.auth-input-password {
+  margin-bottom: 30px;
+}
+
+.auth-form-container :global(.ant-форм) {
+  max-width: 100%; /* Форма теперь занимает всю ширину контейнера */
+  width: calc(100% + 55px) !important; /* Добавляем 55px */
+}
+
+/* Центрируем логотип и заголовок по горизонтали и вертикали */
+.auth-header-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 230px; /* Опускаем вниз на 195px от верха */
+  margin-bottom: 5px; /* Отступ до формы — 70px */
+  transition: all 0.3s ease; /* Плавное появление */
+}
+
+.auth-logo {
+  width: 144px;
+  height: 144px;
+  object-fit: contain;
+  margin-bottom: 16px; /* Отступ между логотипом и заголовком */
+}
