@@ -1,5 +1,5 @@
 import React from 'react';
-import AtomSpinner from './AtomSpinner/Atom';
+import AtomSpinner from '../AtomSpinner/Atom';
 
 const MapArea = ({ selectedCard, mapContainerRef, isTilesLoading, onDrop }) => {
   if (!selectedCard) {

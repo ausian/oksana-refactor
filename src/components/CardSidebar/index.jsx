@@ -1,7 +1,7 @@
 import React from 'react';
 import { Layout, Button, Card, Modal, Spin, Pagination } from 'antd';
 import { DeleteOutlined } from '@ant-design/icons';
-import AtomSpinner from './AtomSpinner/Atom';
+import AtomSpinner from '../AtomSpinner/Atom';
 
 const { Sider } = Layout;
 
