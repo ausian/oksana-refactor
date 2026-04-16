@@ -146,11 +146,6 @@ const useCards = ({ setPreviewImageLayer, setTilesLayer, destroyMap }) => {
 
   const handleCardClick = (uuid) => {
     setSelectedUuid(uuid);
-    const card = imageCards.find(c => c.uuid === uuid);
-    if (card?.tileManifest?.levels) {
-      const { width, height } = getDimsFromLevels(card.tileManifest.levels);
-      setPreviewImageLayer(card.previewUrl || getFallbackImageUrl(), width, height);
-    }
   };
 
   const handlePageChange = (page) => {

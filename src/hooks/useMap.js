@@ -38,6 +38,7 @@ const useMap = () => {
       source: new ImageStatic({ url: imageUrl, projection, imageExtent: extent }),
     }));
     mapRef.current = map;
+    map.updateSize();
     viewFit(map, extent);
   };
 
@@ -58,6 +59,7 @@ const useMap = () => {
       layers: [],
     });
     mapRef.current = map;
+    map.updateSize();
     viewFit(map, extent);
     const tileSource = new TileImage({
       projection,
