@@ -72,11 +72,13 @@ const useMap = () => {
         if (!token) { tile.setState(3); return; }
         fetch(src, { method: 'GET', headers: { Authorization: `Bearer ${token}` } })
           .then(res => { if (!res.ok) throw new Error(`HTTP ${res.status}`); return res.blob(); })
-          .then(blob => { const img = new Image(); img.src = URL.createObjectURL(blob); tile.setImage(img); })
+          .then(blob => {
+            const objectUrl = URL.createObjectURL(blob);
+            tile.getImage().src = objectUrl;
+          })
           .catch(() => tile.setState(3));
       },
       wrapX: false,
-      crossOrigin: 'anonymous',
     });
     const tilesLayer = new TileLayer({ source: tileSource, visible: false });
     map.addControl(new ScaleLine());
