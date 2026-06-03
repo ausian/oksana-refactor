@@ -21,9 +21,12 @@ const App = ({ history }) => {
   const {
     isModalVisible, setIsModalVisible,
     imageCards, setImageCards, selectedCard,
-    loading, isLoading, deleting, stats, statsLoading, detectLoading, detectProgress,
+    loading, isLoading, deleting, stats, statsLoading,
+    detectLoading, detectProgress,
+    isApproving, finalZipLoading, finalZipProgress,
     currentPage, totalCards, itemsPerPage, setItemsPerPage,
-    deleteImage, uploadToServer, handleCardClick, handlePageChange, handleDetectClick,
+    deleteImage, uploadToServer, handleCardClick, handlePageChange,
+    handleDetectClick, handleApproveClick, handleFinalZipClick,
     selectedUuid,
   } = useCards({ setPreviewImageLayer, setTilesLayer, destroyMap });
 
@@ -74,6 +77,11 @@ const App = ({ history }) => {
             detectLoading={detectLoading}
             detectProgress={detectProgress}
             onDetectClick={handleDetectClick}
+            isApproving={isApproving}
+            onApproveClick={handleApproveClick}
+            finalZipLoading={finalZipLoading}
+            finalZipProgress={finalZipProgress}
+            onFinalZipClick={handleFinalZipClick}
           />
           <Layout style={{ padding: '24px' }}>
             <Content>

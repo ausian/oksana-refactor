@@ -9,4 +9,8 @@ export const STATUS = {
   UPLOADED_NO_TILES: 'Загружено (без тайлов)',
   PREPARING: 'Подготовка',
   DETECT_ERROR: 'Ошибка предразметки',
+  PENDING_REVIEW: 'На проверке',
+  TILES_BUILDING: 'Разбиение на тайлы',
+  FINAL_ZIP_BUILDING: 'Формируется final.zip',
+  FINAL_ZIP_READY: 'final.zip готов',
 };

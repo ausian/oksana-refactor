@@ -12,6 +12,9 @@ import {
   fetchDetectionsRequest,
   startDetectionRequest,
   fetchDetectionTaskStatusRequest,
+  approveAnnotationsRequest,
+  startFinalZipExportRequest,
+  fetchFinalZipTaskStatusRequest,
 } from '../services/api';
 import { getFallbackImageUrl, toNullableNumber } from '../utils/mapHelpers';
 import { STATUS } from '../constants/status';
@@ -33,6 +36,9 @@ const useCards = ({ setPreviewImageLayer, setTilesLayer, destroyMap }) => {
   const [detectLoading, setDetectLoading] = useState({});
   const [detectProgress, setDetectProgress] = useState({});
   const [detectError, setDetectError] = useState(null);
+  const [isApproving, setIsApproving] = useState({});
+  const [finalZipLoading, setFinalZipLoading] = useState({});
+  const [finalZipProgress, setFinalZipProgress] = useState({});
 
   const selectedCard = imageCards.find(c => c.uuid === selectedUuid) ?? null;
 
@@ -311,6 +317,94 @@ const useCards = ({ setPreviewImageLayer, setTilesLayer, destroyMap }) => {
     }
   };
 
+  const handleApproveClick = async (uuid) => {
+    const card = imageCards.find(c => c.uuid === uuid);
+    if (!card) { message.warning('Карточка не найдена'); return; }
+    if (isApproving[uuid]) return;
+    if (card.status !== STATUS.PROCESSED) {
+      message.warning("Сначала нужно выполнить предразметку. Статус должен быть 'Обработано'");
+      return;
+    }
+    setIsApproving(prev => ({ ...prev, [uuid]: true }));
+    const token = localStorage.getItem('authToken');
+    try {
+      const data = await approveAnnotationsRequest(uuid, token);
+      message.success(data.message || 'Разметка отправлена на проверку');
+      setImageCards(prev => prev.map(c =>
+        c.uuid === uuid ? { ...c, status: STATUS.PENDING_REVIEW } : c
+      ));
+      await loadStatistics();
+    } catch (error) {
+      console.error('Ошибка апрува разметки:', error);
+      message.error(error.message || 'Не удалось отправить разметку на проверку');
+    } finally {
+      setIsApproving(prev => { const next = { ...prev }; delete next[uuid]; return next; });
+    }
+  };
+
+  const pollFinalZipTaskUntilReady = async (taskId, uuid, opts = {}) => {
+    const token = localStorage.getItem('authToken');
+    const { intervalMs = 1000, timeoutMs = 100 * 60 * 1000, abortFlag = { aborted: false }, onProgress } = opts;
+    const startedAt = Date.now();
+    const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+    const normalizePercent = value => {
+      const p = Number(value);
+      return Number.isFinite(p) ? Math.min(100, Math.max(0, Math.round(p))) : null;
+    };
+    while (true) {
+      if (abortFlag?.aborted) throw new Error('Опрос формирования final.zip прерван');
+      if (Date.now() - startedAt > timeoutMs) throw new Error('Таймаут ожидания формирования final.zip');
+      const data = await fetchFinalZipTaskStatusRequest(taskId, token);
+      const progress = normalizePercent(data.progress);
+      if (progress !== null) onProgress?.(progress);
+      switch (data.status) {
+        case 'processing': await sleep(intervalMs); break;
+        case 'completed': onProgress?.(100); return data;
+        case 'failed': throw new Error(data.error || data.detail || 'Формирование final.zip завершилось ошибкой');
+        default:
+          console.warn('Неизвестный статус формирования final.zip:', data.status);
+          await sleep(intervalMs);
+      }
+    }
+  };
+
+  const handleFinalZipClick = async (uuid) => {
+    const card = imageCards.find(c => c.uuid === uuid);
+    if (!card || finalZipLoading[uuid]) return;
+    if (card.status !== STATUS.PROCESSED) {
+      message.warning('Сначала нужна обработанная и сохранённая разметка');
+      return;
+    }
+    const token = localStorage.getItem('authToken');
+    try {
+      setFinalZipLoading(prev => ({ ...prev, [uuid]: true }));
+      setFinalZipProgress(prev => ({ ...prev, [uuid]: 0 }));
+      setImageCards(prev => prev.map(c =>
+        c.uuid === uuid ? { ...c, status: STATUS.FINAL_ZIP_BUILDING } : c
+      ));
+      const data = await startFinalZipExportRequest(uuid, token);
+      if (!data.task_id) throw new Error('Backend не вернул task_id для формирования final.zip');
+      const result = await pollFinalZipTaskUntilReady(data.task_id, uuid, {
+        onProgress: progress => setFinalZipProgress(prev => ({ ...prev, [uuid]: progress })),
+      });
+      setImageCards(prev => prev.map(c =>
+        c.uuid === uuid
+          ? { ...c, status: STATUS.FINAL_ZIP_READY, finalZipReady: true, finalZipResult: result.result_details || result.result || result }
+          : c
+      ));
+      message.success('final.zip успешно сформирован');
+    } catch (error) {
+      console.error('Ошибка формирования final.zip:', error);
+      setImageCards(prev => prev.map(c =>
+        c.uuid === uuid ? { ...c, status: STATUS.ERROR, finalZipReady: false } : c
+      ));
+      message.error(error.message || 'Не удалось сформировать final.zip');
+    } finally {
+      setFinalZipLoading(prev => { const next = { ...prev }; delete next[uuid]; return next; });
+      setFinalZipProgress(prev => { const next = { ...prev }; delete next[uuid]; return next; });
+    }
+  };
+
   const handlePageChange = (page) => {
     setCurrentPage(page);
     setSelectedUuid(null);
@@ -355,9 +449,12 @@ const useCards = ({ setPreviewImageLayer, setTilesLayer, destroyMap }) => {
   return {
     isModalVisible, setIsModalVisible,
     imageCards, setImageCards, selectedUuid, selectedCard,
-    loading, isLoading, deleting, stats, statsLoading, detectLoading, detectProgress, detectError,
+    loading, isLoading, deleting, stats, statsLoading,
+    detectLoading, detectProgress, detectError,
+    isApproving, finalZipLoading, finalZipProgress,
     currentPage, totalCards, itemsPerPage, setItemsPerPage,
-    deleteImage, uploadToServer, handleCardClick, handlePageChange, handleDetectClick,
+    deleteImage, uploadToServer, handleCardClick, handlePageChange,
+    handleDetectClick, handleApproveClick, handleFinalZipClick,
   };
 };
 

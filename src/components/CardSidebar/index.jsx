@@ -8,6 +8,21 @@ import { STATUS } from '../../constants/status';
 
 const { Sider } = Layout;
 
+const getStatusColor = (status) => {
+  switch (status) {
+    case STATUS.PROCESSED:          return 'green';
+    case STATUS.NOT_ANNOTATED:      return 'red';
+    case STATUS.LOADING:            return 'blue';
+    case STATUS.ERROR:              return 'volcano';
+    case STATUS.DETECT_ERROR:       return 'volcano';
+    case STATUS.PENDING_REVIEW:     return 'orange';
+    case STATUS.TILES_BUILDING:     return 'processing';
+    case STATUS.FINAL_ZIP_BUILDING: return 'processing';
+    case STATUS.FINAL_ZIP_READY:    return 'purple';
+    default:                        return 'default';
+  }
+};
+
 const CardSidebar = ({
   imageCards,
   selectedUuid,
@@ -26,6 +41,11 @@ const CardSidebar = ({
   detectLoading,
   detectProgress,
   onDetectClick,
+  isApproving,
+  onApproveClick,
+  finalZipLoading,
+  finalZipProgress,
+  onFinalZipClick,
 }) => (
   <Sider width={350} style={{ background: '#fff', overflow: 'auto' }}>
     <div
@@ -168,7 +188,18 @@ const CardSidebar = ({
                   <AtomSpinner size={80} animationDuration={1000} />
                 </div>
               )}
-              <DetectionProgressOverlay percent={detectProgress?.[card.uuid]} />
+              <DetectionProgressOverlay
+                percent={
+                  detectProgress?.[card.uuid] !== undefined
+                    ? detectProgress[card.uuid]
+                    : finalZipProgress?.[card.uuid]
+                }
+                label={
+                  finalZipProgress?.[card.uuid] !== undefined
+                    ? 'Формирование final.zip'
+                    : 'Предразметка изображения'
+                }
+              />
             </div>
 
             {/* Метаданные */}
@@ -179,7 +210,7 @@ const CardSidebar = ({
             <p>
               Статус:
               <Tag
-                color={card.status === STATUS.PROCESSED ? 'green' : card.status === STATUS.ERROR ? 'volcano' : 'blue'}
+                color={getStatusColor(card.status)}
                 style={{ marginLeft: 8, textTransform: 'uppercase', fontWeight: 'bold' }}
               >
                 {card.status}
@@ -188,15 +219,63 @@ const CardSidebar = ({
             <p>Найдено объектов: {card.detectionsTotal ?? 0}</p>
             <Button
               icon={<UploadOutlined />}
-              loading={detectLoading?.[card.uuid]}
-              disabled={detectLoading?.[card.uuid]}
+              loading={!!detectLoading?.[card.uuid]}
+              disabled={!!detectLoading?.[card.uuid]}
               onClick={(e) => {
                 e.stopPropagation();
                 onDetectClick(card.uuid);
               }}
-              style={{ marginTop: 8 }}
+              style={{ marginTop: 8, display: 'block' }}
             >
               Обработать
+            </Button>
+            <Button
+              loading={!!isApproving?.[card.uuid]}
+              disabled={
+                card.status !== STATUS.PROCESSED ||
+                !!isApproving?.[card.uuid] ||
+                !!detectLoading?.[card.uuid] ||
+                !!finalZipLoading?.[card.uuid]
+              }
+              onClick={(e) => {
+                e.stopPropagation();
+                onApproveClick(card.uuid);
+              }}
+              title={
+                card.status !== STATUS.PROCESSED
+                  ? "Сначала нужно выполнить предразметку. Статус карточки должен быть 'Обработано'"
+                  : isApproving?.[card.uuid]
+                    ? 'Отправка в процессе...'
+                    : 'Отправить текущую разметку на проверку'
+              }
+              style={{ marginTop: 8, display: 'block' }}
+            >
+              Отправить на проверку
+            </Button>
+            <Button
+              loading={!!finalZipLoading?.[card.uuid]}
+              disabled={
+                card.status !== STATUS.PROCESSED ||
+                !!finalZipLoading?.[card.uuid] ||
+                !!detectLoading?.[card.uuid] ||
+                !!isApproving?.[card.uuid]
+              }
+              onClick={(e) => {
+                e.stopPropagation();
+                onFinalZipClick(card.uuid);
+              }}
+              title={
+                card.status !== STATUS.PROCESSED
+                  ? 'Сначала должна быть готовая обработанная разметка'
+                  : finalZipLoading?.[card.uuid]
+                    ? 'Формирование final.zip выполняется...'
+                    : 'Сформировать итоговый обучающий датасет final.zip'
+              }
+              style={{ marginTop: 8, display: 'block' }}
+            >
+              {finalZipLoading?.[card.uuid]
+                ? `final.zip ${finalZipProgress?.[card.uuid] ?? 0}%`
+                : 'Сформировать final.zip'}
             </Button>
           </Card>
         );

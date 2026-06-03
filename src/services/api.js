@@ -180,3 +180,57 @@ export const fetchDetectionTaskStatusRequest = async (jobId, token) => {
   if (!response.ok) throw new Error(`Ошибка статуса предразметки: ${response.status}`);
   return response.json();
 };
+
+export const approveAnnotationsRequest = async (uuid, token) => {
+  const response = await fetch(`${API_BASE}/detections/9876test/${uuid}`, {
+    method: 'POST',
+    headers: {
+      accept: 'application/json',
+      Authorization: `Bearer ${token}`,
+      'Cache-Control': 'no-cache',
+    },
+    mode: 'cors',
+    cache: 'no-store',
+  });
+  const text = await response.text().catch(() => '');
+  let data = {};
+  try { data = text ? JSON.parse(text) : {}; } catch { data = {}; }
+  if (!response.ok) throw new Error(data?.detail || text || `Ошибка отправки на проверку: ${response.status}`);
+  return data;
+};
+
+export const startFinalZipExportRequest = async (uuid, token) => {
+  const response = await fetch(`${API_BASE}/detections/${uuid}/export`, {
+    method: 'GET',
+    headers: {
+      accept: 'application/json',
+      Authorization: `Bearer ${token}`,
+      'Cache-Control': 'no-cache',
+    },
+    mode: 'cors',
+    cache: 'no-store',
+  });
+  const text = await response.text().catch(() => '');
+  let data = {};
+  try { data = text ? JSON.parse(text) : {}; } catch { data = {}; }
+  if (!response.ok) throw new Error(data?.detail || text || `Ошибка запуска final.zip: ${response.status}`);
+  return data;
+};
+
+export const fetchFinalZipTaskStatusRequest = async (taskId, token) => {
+  const response = await fetch(`${API_BASE}/detections/export/tasks/${taskId}`, {
+    method: 'GET',
+    headers: {
+      accept: 'application/json',
+      Authorization: `Bearer ${token}`,
+      'Cache-Control': 'no-cache',
+    },
+    mode: 'cors',
+    cache: 'no-store',
+  });
+  const text = await response.text().catch(() => '');
+  let data = {};
+  try { data = text ? JSON.parse(text) : {}; } catch { data = {}; }
+  if (!response.ok) throw new Error(data?.detail || text || `Ошибка статуса final.zip: ${response.status}`);
+  return data;
+};
