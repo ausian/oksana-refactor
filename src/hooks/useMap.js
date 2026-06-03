@@ -3,12 +3,36 @@ import Map from 'ol/Map';
 import View from 'ol/View';
 import TileLayer from 'ol/layer/Tile';
 import ImageLayer from 'ol/layer/Image';
+import VectorLayer from 'ol/layer/Vector';
+import VectorSource from 'ol/source/Vector';
 import TileImage from 'ol/source/TileImage';
 import ImageStatic from 'ol/source/ImageStatic';
 import TileGrid from 'ol/tilegrid/TileGrid';
 import Projection from 'ol/proj/Projection';
-import { ScaleLine, FullScreen, Zoom } from 'ol/control';
+import Feature from 'ol/Feature';
+import LineString from 'ol/geom/LineString';
+import { Style, Stroke } from 'ol/style';
+import { ScaleLine, FullScreen, Zoom, Rotate } from 'ol/control';
 import { getMaxZoomFromLevels, getDimsFromLevels, viewFit } from '../utils/mapHelpers';
+
+// Создаёт слой сетки поверх изображения.
+// step — шаг линий в пикселях исходного изображения (по умолчанию 256).
+const createGridLayer = (width, height, step = 256) => {
+  const features = [];
+  for (let x = step; x < width; x += step) {
+    features.push(new Feature(new LineString([[x, 0], [x, height]])));
+  }
+  for (let y = step; y < height; y += step) {
+    features.push(new Feature(new LineString([[0, y], [width, y]])));
+  }
+  return new VectorLayer({
+    source: new VectorSource({ features }),
+    style: new Style({
+      stroke: new Stroke({ color: 'rgba(255,255,255,0.25)', width: 1 }),
+    }),
+    zIndex: 10,
+  });
+};
 
 const useMap = () => {
   const [isTilesLoading, setIsTilesLoading] = useState(false);
@@ -45,9 +69,11 @@ const useMap = () => {
     map.addControl(new ScaleLine());
     map.addControl(new FullScreen());
     map.addControl(new Zoom());
+    map.addControl(new Rotate());
     map.addLayer(new ImageLayer({
       source: new ImageStatic({ url: imageUrl, projection, imageExtent: extent }),
     }));
+    map.addLayer(createGridLayer(width, height));
     mapRef.current = map;
     map.updateSize();
     viewFit(map, extent);
@@ -112,7 +138,9 @@ const useMap = () => {
     map.addControl(new ScaleLine());
     map.addControl(new FullScreen());
     map.addControl(new Zoom());
+    map.addControl(new Rotate());
     map.addLayer(tilesLayer);
+    map.addLayer(createGridLayer(width, height));
 
     const handleTileLoadStart = () => {
       pendingTileLoadsRef.current += 1;
