@@ -14,13 +14,9 @@ import {
   fetchDetectionTaskStatusRequest,
 } from '../services/api';
 import { getFallbackImageUrl, toNullableNumber } from '../utils/mapHelpers';
+import { STATUS } from '../constants/status';
 
-export const STATUS = {
-  PROCESSED: 'Обработано',
-  NOT_ANNOTATED: 'Не размечено',
-  LOADING: 'Загружается',
-  ERROR: 'Ошибка',
-};
+export { STATUS };
 
 const useCards = ({ setPreviewImageLayer, setTilesLayer, destroyMap }) => {
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -169,7 +165,7 @@ const useCards = ({ setPreviewImageLayer, setTilesLayer, destroyMap }) => {
         format: result.format, size: `${sizeInMB} MB`,
         height: result.height, width: result.width,
         dimensions: `${result.height} × ${result.width} px`,
-        status: 'Загружено (без тайлов)', quality: '—',
+        status: STATUS.UPLOADED_NO_TILES, quality: '—',
         isLoading: true, tileJobId: null, tileManifest: null,
         detections: [], detectionsTotal: 0,
       };
@@ -182,7 +178,7 @@ const useCards = ({ setPreviewImageLayer, setTilesLayer, destroyMap }) => {
       setLoading(false);
       const uuid = result.uuid;
       const tileBuildStartedAt = Date.now();
-      setImageCards(prev => prev.map(c => c.uuid === uuid ? { ...c, status: 'Подготовка' } : c));
+      setImageCards(prev => prev.map(c => c.uuid === uuid ? { ...c, status: STATUS.PREPARING } : c));
       const jobId = await startTileBuildRequest(uuid, token);
       setImageCards(prev => prev.map(c => c.uuid === uuid ? { ...c, tileJobId: jobId } : c));
       const manifest = await pollTileStatusUntilReady(jobId, { abortFlag: { aborted: false } });
@@ -298,7 +294,7 @@ const useCards = ({ setPreviewImageLayer, setTilesLayer, destroyMap }) => {
       console.error('Ошибка предразметки:', error);
       setDetectError(error.message);
       setImageCards(prev => prev.map(c =>
-        c.uuid === uuid ? { ...c, status: 'Ошибка предразметки', detectionsTotal: 0 } : c
+        c.uuid === uuid ? { ...c, status: STATUS.DETECT_ERROR, detectionsTotal: 0 } : c
       ));
       message.error(error.message || 'Не удалось выполнить предразметку');
     } finally {

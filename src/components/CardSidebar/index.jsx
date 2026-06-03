@@ -4,6 +4,7 @@ import { DeleteOutlined, UploadOutlined } from '@ant-design/icons';
 import AtomSpinner from '../AtomSpinner/Atom';
 import DetectionProgressOverlay from '../DetectionProgressOverlay';
 import { formatDuration } from '../../utils/mapHelpers';
+import { STATUS } from '../../constants/status';
 
 const { Sider } = Layout;
 
@@ -178,7 +179,7 @@ const CardSidebar = ({
             <p>
               Статус:
               <Tag
-                color={card.status === 'Обработано' ? 'green' : card.status === 'Ошибка' ? 'volcano' : 'blue'}
+                color={card.status === STATUS.PROCESSED ? 'green' : card.status === STATUS.ERROR ? 'volcano' : 'blue'}
                 style={{ marginLeft: 8, textTransform: 'uppercase', fontWeight: 'bold' }}
               >
                 {card.status}

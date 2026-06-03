@@ -12,6 +12,7 @@ import {
   featureToDetection,
 } from '../utils/annotationHelpers';
 import { fetchDetectionsRequest, saveDetectionsRequest } from '../services/api';
+import { STATUS } from '../constants/status';
 
 const useMapAnnotations = ({ mapRef, selectedCard, setImageCards }) => {
   const [annotationMode, setAnnotationMode] = useState(null);
@@ -190,7 +191,7 @@ const useMapAnnotations = ({ mapRef, selectedCard, setImageCards }) => {
             ...card,
             detections: freshDetections,
             detectionsTotal: freshDetections.length,
-            status: freshDetections.length > 0 ? 'Обработано' : 'Не размечено',
+            status: freshDetections.length > 0 ? STATUS.PROCESSED : STATUS.NOT_ANNOTATED,
           }
           : card
       ));
