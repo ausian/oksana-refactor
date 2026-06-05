@@ -4,24 +4,9 @@ import { DeleteOutlined, UploadOutlined } from '@ant-design/icons';
 import AtomSpinner from '../AtomSpinner/Atom';
 import DetectionProgressOverlay from '../DetectionProgressOverlay';
 import { formatDuration } from '../../utils/mapHelpers';
-import { STATUS } from '../../constants/status';
+import { STATUS, getStatusColor } from '../../constants/status';
 
 const { Sider } = Layout;
-
-const getStatusColor = (status) => {
-  switch (status) {
-    case STATUS.PROCESSED:          return 'green';
-    case STATUS.NOT_ANNOTATED:      return 'red';
-    case STATUS.LOADING:            return 'blue';
-    case STATUS.ERROR:              return 'volcano';
-    case STATUS.DETECT_ERROR:       return 'volcano';
-    case STATUS.PENDING_REVIEW:     return 'orange';
-    case STATUS.TILES_BUILDING:     return 'processing';
-    case STATUS.FINAL_ZIP_BUILDING: return 'processing';
-    case STATUS.FINAL_ZIP_READY:    return 'purple';
-    default:                        return 'default';
-  }
-};
 
 const CardSidebar = ({
   imageCards,
@@ -41,11 +26,16 @@ const CardSidebar = ({
   detectLoading,
   detectProgress,
   onDetectClick,
+  tileBuildLoading,
+  tileBuildProgress,
   isApproving,
   onApproveClick,
   finalZipLoading,
   finalZipProgress,
   onFinalZipClick,
+  showAccuracyState,
+  onShowModelAccuracy,
+  getCardProgressOverlay,
 }) => (
   <Sider width={350} style={{ background: '#fff', overflow: 'auto' }}>
     <div
@@ -188,18 +178,10 @@ const CardSidebar = ({
                   <AtomSpinner size={80} animationDuration={1000} />
                 </div>
               )}
-              <DetectionProgressOverlay
-                percent={
-                  detectProgress?.[card.uuid] !== undefined
-                    ? detectProgress[card.uuid]
-                    : finalZipProgress?.[card.uuid]
-                }
-                label={
-                  finalZipProgress?.[card.uuid] !== undefined
-                    ? 'Формирование final.zip'
-                    : 'Предразметка изображения'
-                }
-              />
+              {(() => {
+                const overlay = getCardProgressOverlay(card);
+                return <DetectionProgressOverlay percent={overlay.percent} label={overlay.label} />;
+              })()}
             </div>
 
             {/* Метаданные */}
@@ -216,7 +198,19 @@ const CardSidebar = ({
                 {card.status}
               </Tag>
             </p>
-            <p>Найдено объектов: {card.detectionsTotal ?? 0}</p>
+            <p>Всего объектов: {card.detectionsTotal ?? 0}</p>
+            <p>Найдено моделью: {card.modelTracksTotal ?? 0}</p>
+            <p>Добавлено треков: {card.manualTracksTotal ?? 0}</p>
+            <p>Удалено треков: {card.deletedTracksTotal ?? 0}</p>
+            {showAccuracyState?.[card.uuid] && card.modelAccuracyPercent != null && (
+              <p style={{ fontWeight: 700 }}>Точность F1: {card.modelAccuracyPercent}%</p>
+            )}
+            {showAccuracyState?.[card.uuid] && card.precision != null && (
+              <p style={{ fontWeight: 700 }}>Precision: {card.precision}%</p>
+            )}
+            {showAccuracyState?.[card.uuid] && card.recall != null && (
+              <p style={{ fontWeight: 700 }}>Recall: {card.recall}%</p>
+            )}
             <Button
               icon={<UploadOutlined />}
               loading={!!detectLoading?.[card.uuid]}
@@ -228,6 +222,22 @@ const CardSidebar = ({
               style={{ marginTop: 8, display: 'block' }}
             >
               Обработать
+            </Button>
+            <Button
+              disabled={
+                !!detectLoading?.[card.uuid] ||
+                !!tileBuildLoading?.[card.uuid] ||
+                !!finalZipLoading?.[card.uuid] ||
+                card.status === STATUS.LOADING ||
+                card.status === STATUS.TILES_BUILDING
+              }
+              onClick={(e) => {
+                e.stopPropagation();
+                onShowModelAccuracy(card.uuid);
+              }}
+              style={{ marginTop: 8, display: 'block' }}
+            >
+              Определить точность
             </Button>
             <Button
               loading={!!isApproving?.[card.uuid]}
@@ -268,14 +278,14 @@ const CardSidebar = ({
                 card.status !== STATUS.PROCESSED
                   ? 'Сначала должна быть готовая обработанная разметка'
                   : finalZipLoading?.[card.uuid]
-                    ? 'Формирование final.zip выполняется...'
-                    : 'Сформировать итоговый обучающий датасет final.zip'
+                    ? 'Добавление в датасет выполняется...'
+                    : 'Добавить изображение в итоговый обучающий датасет'
               }
               style={{ marginTop: 8, display: 'block' }}
             >
               {finalZipLoading?.[card.uuid]
-                ? `final.zip ${finalZipProgress?.[card.uuid] ?? 0}%`
-                : 'Сформировать final.zip'}
+                ? `В датасет ${finalZipProgress?.[card.uuid] ?? 0}%`
+                : 'Добавить в датасет'}
             </Button>
           </Card>
         );

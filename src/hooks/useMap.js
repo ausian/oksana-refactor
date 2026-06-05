@@ -15,23 +15,42 @@ import { Style, Stroke } from 'ol/style';
 import { ScaleLine, FullScreen, Zoom, Rotate } from 'ol/control';
 import { getMaxZoomFromLevels, getDimsFromLevels, viewFit } from '../utils/mapHelpers';
 
-// Создаёт слой сетки поверх изображения.
-// step — шаг линий в пикселях исходного изображения (по умолчанию 256).
-const createGridLayer = (width, height, step = 256) => {
-  const features = [];
-  for (let x = step; x < width; x += step) {
-    features.push(new Feature(new LineString([[x, 0], [x, height]])));
-  }
-  for (let y = step; y < height; y += step) {
-    features.push(new Feature(new LineString([[0, y], [width, y]])));
-  }
-  return new VectorLayer({
-    source: new VectorSource({ features }),
+// Добавляет на карту динамическую координатную сетку.
+// Линии перестраиваются при изменении центра/масштаба, шаг — spacing пикселей.
+const addGridLayer = (map, spacing = 1024) => {
+  const gridSource = new VectorSource({ wrapX: false });
+  const gridLayer = new VectorLayer({
+    source: gridSource,
     style: new Style({
-      stroke: new Stroke({ color: 'rgba(255,255,255,0.25)', width: 1 }),
+      stroke: new Stroke({ color: 'rgba(0, 0, 0, 0.3)', width: 1 }),
     }),
-    zIndex: 10,
+    zIndex: 1000,
   });
+
+  const updateGrid = () => {
+    const view = map.getView();
+    const ext = view.calculateExtent(map.getSize());
+    gridSource.clear();
+
+    const minX = Math.floor(ext[0] / spacing) * spacing;
+    const maxX = Math.ceil(ext[2] / spacing) * spacing;
+    const minY = Math.floor(ext[1] / spacing) * spacing;
+    const maxY = Math.ceil(ext[3] / spacing) * spacing;
+
+    for (let x = minX; x <= maxX; x += spacing) {
+      gridSource.addFeature(new Feature({ geometry: new LineString([[x, minY], [x, maxY]]) }));
+    }
+    for (let y = minY; y <= maxY; y += spacing) {
+      gridSource.addFeature(new Feature({ geometry: new LineString([[minX, y], [maxX, y]]) }));
+    }
+  };
+
+  map.getView().on('change:center', updateGrid);
+  map.getView().on('change:resolution', updateGrid);
+  map.on('change:size', updateGrid);
+  updateGrid();
+
+  map.addLayer(gridLayer);
 };
 
 const useMap = () => {
@@ -70,10 +89,10 @@ const useMap = () => {
     map.addControl(new FullScreen());
     map.addControl(new Zoom());
     map.addControl(new Rotate());
+    addGridLayer(map);
     map.addLayer(new ImageLayer({
       source: new ImageStatic({ url: imageUrl, projection, imageExtent: extent }),
     }));
-    map.addLayer(createGridLayer(width, height));
     mapRef.current = map;
     map.updateSize();
     viewFit(map, extent);
@@ -140,7 +159,7 @@ const useMap = () => {
     map.addControl(new Zoom());
     map.addControl(new Rotate());
     map.addLayer(tilesLayer);
-    map.addLayer(createGridLayer(width, height));
+    addGridLayer(map);
 
     const handleTileLoadStart = () => {
       pendingTileLoadsRef.current += 1;

@@ -41,6 +41,63 @@ export const fetchManifest = async (uuid, token) => {
   return response.json();
 };
 
+// Толерантная версия: возвращает manifest или null (без throw),
+// используется при фоновой гидрации карточек.
+export const fetchManifestForCard = async (uuid, token) => {
+  if (!uuid) return null;
+  try {
+    const response = await fetch(`${API_BASE}/tiles/${uuid}/manifest`, {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${token}`, 'Cache-Control': 'no-cache' },
+      mode: 'cors',
+      cache: 'no-store',
+    });
+    if (!response.ok) return null;
+    return await response.json();
+  } catch (error) {
+    console.error('Manifest error:', error.message);
+    return null;
+  }
+};
+
+// Готовое preview из storage (больше не строится из тайлов).
+export const fetchStoredPreview = async (uuid, token) => {
+  if (!uuid) return null;
+  try {
+    const response = await fetch(`${API_BASE}/storage/images/${uuid}/preview`, {
+      method: 'GET',
+      headers: { accept: 'image/webp', Authorization: `Bearer ${token}`, 'Cache-Control': 'no-cache' },
+      mode: 'cors',
+      cache: 'no-store',
+    });
+    if (!response.ok) {
+      console.warn(`Preview не получено uuid=${uuid}: HTTP ${response.status}`);
+      return null;
+    }
+    const blob = await response.blob();
+    return URL.createObjectURL(blob);
+  } catch (error) {
+    console.error(`Ошибка загрузки preview uuid=${uuid}:`, error);
+    return null;
+  }
+};
+
+// Сводка детекции: классы, треки, метрики точности модели.
+export const fetchDetectionSummaryRequest = async (uuid, token) => {
+  const response = await fetch(`${API_BASE}/detections/${uuid}/summary`, {
+    method: 'GET',
+    headers: {
+      accept: 'application/json',
+      Authorization: `Bearer ${token}`,
+      'Cache-Control': 'no-cache',
+    },
+    mode: 'cors',
+    cache: 'no-store',
+  });
+  if (!response.ok) throw new Error(`Ошибка summary предразметки: ${response.status}`);
+  return response.json();
+};
+
 export const uploadImageRequest = async (file, token) => {
   const formData = new FormData();
   formData.append('file', file);
@@ -149,7 +206,7 @@ export const saveDetectionsRequest = async (uuid, detections, token) => {
 };
 
 export const startDetectionRequest = async (uuid, token) => {
-  const response = await fetch(`${API_BASE}/detections/${uuid}`, {
+  const response = await fetch(`${API_BASE}/detections/${uuid}/detect`, {
     method: 'POST',
     headers: {
       accept: 'application/json',

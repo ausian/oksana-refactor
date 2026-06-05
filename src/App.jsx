@@ -23,10 +23,13 @@ const App = ({ history }) => {
     imageCards, setImageCards, selectedCard,
     loading, isLoading, deleting, stats, statsLoading,
     detectLoading, detectProgress,
+    tileBuildLoading, tileBuildProgress,
     isApproving, finalZipLoading, finalZipProgress,
+    showAccuracyState,
     currentPage, totalCards, itemsPerPage, setItemsPerPage,
     deleteImage, uploadToServer, handleCardClick, handlePageChange,
     handleDetectClick, handleApproveClick, handleFinalZipClick,
+    handleShowModelAccuracy, getCardProgressOverlay,
     selectedUuid,
   } = useCards({ setPreviewImageLayer, setTilesLayer, destroyMap });
 
@@ -77,11 +80,16 @@ const App = ({ history }) => {
             detectLoading={detectLoading}
             detectProgress={detectProgress}
             onDetectClick={handleDetectClick}
+            tileBuildLoading={tileBuildLoading}
+            tileBuildProgress={tileBuildProgress}
             isApproving={isApproving}
             onApproveClick={handleApproveClick}
             finalZipLoading={finalZipLoading}
             finalZipProgress={finalZipProgress}
             onFinalZipClick={handleFinalZipClick}
+            showAccuracyState={showAccuracyState}
+            onShowModelAccuracy={handleShowModelAccuracy}
+            getCardProgressOverlay={getCardProgressOverlay}
           />
           <Layout style={{ padding: '24px' }}>
             <Content>
